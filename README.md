@@ -1,248 +1,208 @@
-# BTS SIO SISR – TP PAM avec CyberArk Conjur Community dans GitHub Classroom et Codespaces
+# BTS SIO SISR – PAM avec CyberArk Conjur Community
 
 ## Contexte
 
-Ce dépôt vous est distribué via GitHub Classroom.  
-Chaque élève travaille sur sa propre copie du projet.
+Ce dépôt s'ouvre directement dans GitHub Codespaces depuis GitHub Classroom.
 
-Le travail demandé se fait dans GitHub Codespaces.  
-Vous n'avez pas à installer localement l'environnement avant de commencer, sauf indication contraire de l'enseignant.
+L'environnement est prêt à l'emploi :
+- Docker est configuré dans le Codespace ;
+- la pile Conjur démarre avec les bons conteneurs ;
+- les policies sont déjà présentes dans le dépôt ;
+- les scripts nécessaires sont inclus.
 
-L'objectif du TP est de :
-- démarrer l'environnement du projet dans Codespaces ;
-- lancer CyberArk Conjur Community ;
-- créer ou charger une policy ;
-- stocker un secret d'infrastructure ;
-- vérifier qu'un hôte autorisé peut lire ce secret ;
-- comprendre comment le principe du moindre privilège est appliqué.
+Le travail consiste à :
+1. démarrer la plate-forme ;
+2. vérifier les services ;
+3. charger la configuration Conjur ;
+4. stocker des secrets d'infrastructure ;
+5. relire ces secrets ;
+6. analyser la logique d'autorisation définie dans les policies.
 
----
+## Structure du dépôt
 
-## Règle de travail dans GitHub Classroom
+```text
+.
+├── .devcontainer/
+├── conf/
+├── docker-compose.yml
+├── policies/
+│   ├── policy-network.yml
+│   └── policy-webservers.yml
+├── scripts/
+│   ├── start-lab.sh
+│   ├── check-services.sh
+│   ├── show-admin-key.sh
+│   ├── read-secrets.sh
+│   └── stop-lab.sh
+└── README.md
+```
 
-Vous devez travailler dans **votre dépôt personnel GitHub Classroom**.
+## Ouverture dans Codespaces
 
-Cela signifie que :
-- vous ne modifiez pas le dépôt du professeur ;
-- vous effectuez toutes vos manipulations dans votre propre copie ;
-- vous enregistrez vos modifications avec des commits si l'enseignant vous le demande.
+1. Ouvrir le dépôt GitHub Classroom.
+2. Cliquer sur `Code`.
+3. Cliquer sur `Codespaces`.
+4. Cliquer sur `Create codespace on main`.
+5. Attendre la fin du démarrage.
 
----
+## Étape 1 – Vérifier le contenu du dépôt
 
-## Ouvrir le projet dans GitHub Codespaces
-
-1. Ouvrir votre dépôt GitHub Classroom.
-2. Cliquer sur **Code**.
-3. Cliquer sur **Codespaces**.
-4. Cliquer sur **Create codespace on main**.
-
-Attendre que l'environnement termine son démarrage.
-
----
-
-## Vérifier le contenu du projet
-
-Dans le terminal Codespaces, tapez :
+Commande :
 
 ```bash
 ls
 ```
 
-Cette commande permet de vérifier que vous êtes bien à la racine du projet.
+Cette commande affiche les éléments du dépôt et permet de vérifier que vous êtes bien à la racine du projet.
 
-Vous devez voir les dossiers et fichiers principaux du template, par exemple :
-- les scripts ;
-- les fichiers de policy ;
-- la documentation ;
-- les fichiers de configuration du projet.
+## Étape 2 – Rendre les scripts exécutables
 
----
-
-## Vérifier si Docker est disponible
-
-Dans le terminal Codespaces, tapez :
+Commande :
 
 ```bash
-docker --version
-docker compose version
+chmod +x scripts/*.sh
 ```
 
-Ces commandes permettent de vérifier que Docker et Docker Compose sont disponibles dans l'environnement Codespaces.
+Cette commande rend exécutables tous les scripts du dossier `scripts`.
 
----
+## Étape 3 – Démarrer l'environnement complet
 
-## Se placer dans le dossier du projet si nécessaire
-
-Si vous avez ouvert un sous-dossier par erreur, revenez à la racine du dépôt avant d'exécuter les commandes du TP.
-
-Commande utile :
+Commande :
 
 ```bash
-pwd
+./scripts/start-lab.sh
 ```
 
-Cette commande permet d'afficher le dossier courant.
+Cette commande réalise automatiquement les actions suivantes :
+- génère la clé de chiffrement Conjur ;
+- crée le fichier `.env` nécessaire au démarrage ;
+- lance PostgreSQL, Conjur, Nginx, le client Conjur et pgAdmin ;
+- crée le compte Conjur `btssio` ;
+- initialise le client Conjur ;
+- connecte le client en tant qu'administrateur ;
+- charge les deux policies du dépôt ;
+- enregistre quatre secrets de démonstration.
 
----
+Quand la commande se termine, l'environnement est prêt.
 
-## Rendre les scripts exécutables
+## Étape 4 – Vérifier l'état des services
 
-Si le projet contient des scripts shell, tapez :
+Commande :
 
 ```bash
-find . -name "*.sh" -exec chmod +x {} \;
+./scripts/check-services.sh
 ```
 
-Cette commande permet de rendre exécutables tous les scripts shell du dépôt.
+Cette commande affiche les conteneurs actifs.
 
----
+Le résultat attendu est la présence des services suivants en cours d'exécution :
+- `postgres_database`
+- `conjur_server`
+- `nginx_proxy`
+- `conjur_client`
+- `pgadmin`
 
-## Démarrer l'environnement Conjur
+## Étape 5 – Afficher la clé API de l'administrateur
 
-Consultez d'abord le contenu du dépôt pour identifier :
-- le fichier `docker-compose.yml` ou `compose.yml` s'il existe ;
-- le dossier contenant les scripts de démarrage ;
-- le quickstart ou la documentation fournie.
-
-Si le template contient un fichier `docker-compose.yml`, tapez :
+Commande :
 
 ```bash
-docker compose up -d
+./scripts/show-admin-key.sh
 ```
 
-Cette commande permet de démarrer les conteneurs nécessaires au projet.
+Cette commande lit le fichier `admin_data` et affiche la clé API du compte `admin`.
 
-Puis tapez :
+Cette clé sert à comprendre comment Conjur initialise un compte administrateur et stocke son API key localement dans le dépôt de travail.
+
+## Étape 6 – Lire les secrets stockés
+
+Commande :
 
 ```bash
-docker compose ps
+./scripts/read-secrets.sh
 ```
 
-Cette commande permet de vérifier que les services sont bien démarrés.
+Cette commande :
+- reconnecte automatiquement le client Conjur avec la clé API de l'administrateur ;
+- lit les secrets définis dans les deux policies.
 
-Si le template utilise un script de démarrage fourni par l'enseignant, exécutez ce script à la place.
+Les secrets relus sont :
+- `webservers/db/username`
+- `webservers/db/password`
+- `network/snmp/community`
+- `network/backup/password`
 
-Exemple générique :
+## Étape 7 – Examiner les policies
+
+Commande :
 
 ```bash
-./scripts/start-conjur.sh
+cat policies/policy-webservers.yml
 ```
 
-Cette commande sert à lancer automatiquement l'environnement Conjur si le template fournit ce script.
+Cette commande affiche la policy des serveurs web.
 
----
-
-## Identifier l'URL Codespaces utile
-
-Dans l'onglet **Ports** de GitHub Codespaces :
-- repérer le port exposé pour Conjur ;
-- ouvrir l'URL associée si l'enseignant vous demande de vérifier l'accès via navigateur.
-
-Vous devez utiliser **l'URL générée par Codespaces**.  
-Vous ne devez pas utiliser `localhost` ou `127.0.0.1` dans le navigateur.
-
----
-
-## Charger une policy
-
-Repérez le fichier de policy YAML demandé par l'enseignant.
-
-Commande générique :
+Commande :
 
 ```bash
-conjur policy load -b root -f NOM_DU_FICHIER.yml
+cat policies/policy-network.yml
 ```
 
-Cette commande permet de charger dans Conjur une policy définissant :
-- les hôtes ;
-- les groupes ;
+Cette commande affiche la policy réseau.
+
+Ces deux fichiers permettent d'identifier :
 - les variables ;
-- les permissions.
+- les hosts ;
+- les layers ;
+- les permissions accordées.
 
-Remplacez `NOM_DU_FICHIER.yml` par le nom exact du fichier fourni dans le dépôt.
+## Étape 8 – Vérifier les ports Codespaces
 
-Si la commande `conjur` doit être lancée depuis un conteneur, utilisez la commande fournie dans le README technique du projet ou par l'enseignant.
+Ouvrir l'onglet `Ports` dans GitHub Codespaces.
 
----
+Les ports utiles sont :
+- `8443` pour l'accès HTTPS à Conjur via Nginx ;
+- `8081` pour pgAdmin.
 
-## Créer ou stocker un secret
+Dans un navigateur, il faut toujours utiliser l'URL générée par Codespaces dans cet onglet.
 
-Commande générique :
+## Étape 9 – Arrêter l'environnement à la fin du travail
 
-```bash
-conjur variable set -i CHEMIN/DU/SECRET -v "VALEUR_DU_SECRET"
-```
-
-Cette commande permet d'enregistrer un secret dans Conjur.
-
-Exemple :
+Commande :
 
 ```bash
-conjur variable set -i webservers/db/password -v "MotDePasseSecurise123!"
+./scripts/stop-lab.sh
 ```
 
----
+Cette commande arrête l'ensemble de la plate-forme.
 
-## Vérifier la lecture d'un secret
-
-Commande générique :
+## Commandes récapitulatives
 
 ```bash
-conjur variable get -i CHEMIN/DU/SECRET
+ls
+chmod +x scripts/*.sh
+./scripts/start-lab.sh
+./scripts/check-services.sh
+./scripts/show-admin-key.sh
+./scripts/read-secrets.sh
+cat policies/policy-webservers.yml
+cat policies/policy-network.yml
+./scripts/stop-lab.sh
 ```
-
-Cette commande permet de lire un secret stocké dans Conjur.
-
-Elle permet de vérifier que :
-- le secret existe ;
-- le rôle utilisé possède les droits nécessaires.
-
----
-
-## Travail demandé
-
-Vous devez effectuer les actions suivantes :
-
-1. Ouvrir votre dépôt GitHub Classroom dans Codespaces.
-2. Vérifier la présence des fichiers du projet.
-3. Rendre les scripts exécutables si nécessaire.
-4. Démarrer l'environnement Conjur.
-5. Charger une policy fournie dans le dépôt.
-6. Créer un secret.
-7. Vérifier la lecture du secret.
-8. Expliquer à quoi sert la policy.
-9. Expliquer en quoi cette organisation applique le principe du moindre privilège.
-
----
-
-## Traces à conserver
-
-Selon la consigne de l'enseignant, vous pouvez devoir conserver :
-- une capture du terminal après le démarrage ;
-- une capture des services actifs ;
-- une copie de la policy utilisée ;
-- la sortie de lecture du secret ;
-- vos modifications enregistrées dans Git.
-
----
 
 ## Résultat attendu
 
-À la fin du TP :
-- le projet a été lancé depuis GitHub Codespaces ;
-- l'environnement Conjur est démarré ;
-- une policy a été chargée ;
-- un secret a été enregistré ;
-- la lecture du secret fonctionne ;
-- vous êtes capable d'expliquer le rôle des hosts, layers, variables et permissions.
+À la fin du travail :
+- le dépôt a été lancé dans GitHub Codespaces ;
+- Conjur fonctionne avec son proxy Nginx et sa base PostgreSQL ;
+- les policies ont été chargées ;
+- les secrets ont été enregistrés ;
+- les secrets peuvent être relus ;
+- la différence entre `host`, `layer`, `variable` et `permit` est comprise.
 
----
+## Points à retenir
 
-## À retenir
-
-Ce TP montre que :
-- GitHub Classroom permet de distribuer un travail individuel ;
-- GitHub Codespaces permet d'exécuter le projet dans un environnement homogène ;
-- Conjur permet de sécuriser les secrets d'infrastructure ;
-- les policies permettent de contrôler précisément qui peut lire un secret ;
-- la sécurité repose sur la limitation des droits et la traçabilité des accès.
+- Un secret d'infrastructure ne doit pas être stocké en clair dans un fichier partagé.
+- Une policy Conjur définit qui peut lire quoi.
+- Les identités machine sont séparées par rôle.
+- Le principe du moindre privilège consiste à limiter l'accès aux seuls secrets nécessaires.

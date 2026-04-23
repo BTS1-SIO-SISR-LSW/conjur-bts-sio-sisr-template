@@ -18,7 +18,7 @@
 
     - !permit
       role: !layer network-admins
-      privileges: [read, execute]
+      privileges: [ read, execute ]
       resources:
         - !variable snmp/community
         - !variable backup/password

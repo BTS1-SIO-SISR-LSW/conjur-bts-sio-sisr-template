@@ -1,0 +1,16 @@
+{
+  "name": "Conjur SISR Lab",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
+  "forwardPorts": [8443, 8081],
+  "postCreateCommand": "chmod +x scripts/*.sh",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  }
+}

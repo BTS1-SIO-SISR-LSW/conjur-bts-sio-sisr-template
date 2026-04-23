@@ -18,7 +18,7 @@
 
     - !permit
       role: !layer prod-web
-      privileges: [read, execute]
+      privileges: [ read, execute ]
       resources:
         - !variable db/password
         - !variable db/username
