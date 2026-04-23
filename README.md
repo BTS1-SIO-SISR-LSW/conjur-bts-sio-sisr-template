@@ -1,180 +1,163 @@
-# BTS SIO SISR – PAM avec CyberArk Conjur Community
+# BTS SIO SISR – CyberArk Conjur Community avec GitHub Classroom et Codespaces
 
 ## Contexte
 
-Ce dépôt s'ouvre directement dans GitHub Codespaces depuis GitHub Classroom.
+Ce dépôt s'utilise directement dans GitHub Classroom et GitHub Codespaces.
 
-L'environnement est prêt à l'emploi :
-- Docker est configuré dans le Codespace ;
-- la pile Conjur démarre avec les bons conteneurs ;
-- les policies sont déjà présentes dans le dépôt ;
-- les scripts nécessaires sont inclus.
+Le laboratoire met en place un environnement Conjur prêt à l'emploi :
+- une base PostgreSQL ;
+- un serveur Conjur ;
+- un client Conjur ;
+- une policy YAML ;
+- des scripts de démarrage, de chargement et de vérification.
 
-Le travail consiste à :
-1. démarrer la plate-forme ;
-2. vérifier les services ;
-3. charger la configuration Conjur ;
-4. stocker des secrets d'infrastructure ;
-5. relire ces secrets ;
-6. analyser la logique d'autorisation définie dans les policies.
+L'objectif est de :
+- démarrer l'environnement ;
+- charger une policy ;
+- enregistrer des secrets ;
+- lire les secrets ;
+- comprendre le rôle des hosts, layers, variables et permissions.
 
-## Structure du dépôt
-
-```text
-.
-├── .devcontainer/
-├── conf/
-├── docker-compose.yml
-├── policies/
-│   ├── policy-network.yml
-│   └── policy-webservers.yml
-├── scripts/
-│   ├── start-lab.sh
-│   ├── check-services.sh
-│   ├── show-admin-key.sh
-│   ├── read-secrets.sh
-│   └── stop-lab.sh
-└── README.md
-```
-
-## Ouverture dans Codespaces
+## Ouvrir le dépôt dans Codespaces
 
 1. Ouvrir le dépôt GitHub Classroom.
-2. Cliquer sur `Code`.
-3. Cliquer sur `Codespaces`.
-4. Cliquer sur `Create codespace on main`.
+2. Cliquer sur **Code**.
+3. Cliquer sur **Codespaces**.
+4. Cliquer sur **Create codespace on main**.
 5. Attendre la fin du démarrage.
 
-## Étape 1 – Vérifier le contenu du dépôt
+## Vérifier la racine du projet
 
-Commande :
+Commande à taper :
 
 ```bash
 ls
 ```
 
-Cette commande affiche les éléments du dépôt et permet de vérifier que vous êtes bien à la racine du projet.
+Cette commande permet de vérifier que vous êtes bien à la racine du dépôt.  
+Vous devez voir notamment :
+- `docker-compose.yml`
+- `policies`
+- `scripts`
 
-## Étape 2 – Rendre les scripts exécutables
+## Rendre les scripts exécutables
 
-Commande :
+Commande à taper :
 
 ```bash
 chmod +x scripts/*.sh
 ```
 
-Cette commande rend exécutables tous les scripts du dossier `scripts`.
+Cette commande permet d'autoriser l'exécution de tous les scripts du laboratoire.
 
-## Étape 3 – Démarrer l'environnement complet
+## Démarrer le laboratoire
 
-Commande :
+Commande à taper :
 
 ```bash
 ./scripts/start-lab.sh
 ```
 
-Cette commande réalise automatiquement les actions suivantes :
-- génère la clé de chiffrement Conjur ;
-- crée le fichier `.env` nécessaire au démarrage ;
-- lance PostgreSQL, Conjur, Nginx, le client Conjur et pgAdmin ;
-- crée le compte Conjur `btssio` ;
-- initialise le client Conjur ;
-- connecte le client en tant qu'administrateur ;
-- charge les deux policies du dépôt ;
-- enregistre quatre secrets de démonstration.
+Cette commande permet de :
+- télécharger les images Docker nécessaires ;
+- générer la clé de données Conjur ;
+- démarrer les conteneurs ;
+- créer le compte `btslab` ;
+- initialiser le client Conjur ;
+- connecter le client avec l'utilisateur `admin`.
 
-Quand la commande se termine, l'environnement est prêt.
+Le premier démarrage peut prendre plusieurs minutes.
 
-## Étape 4 – Vérifier l'état des services
+## Vérifier les services actifs
 
-Commande :
+Commande à taper :
 
 ```bash
 ./scripts/check-services.sh
 ```
 
-Cette commande affiche les conteneurs actifs.
+Cette commande permet d'afficher l'état des conteneurs.
 
-Le résultat attendu est la présence des services suivants en cours d'exécution :
-- `postgres_database`
-- `conjur_server`
-- `nginx_proxy`
-- `conjur_client`
-- `pgadmin`
+## Charger la policy
 
-## Étape 5 – Afficher la clé API de l'administrateur
-
-Commande :
+Commande à taper :
 
 ```bash
-./scripts/show-admin-key.sh
+./scripts/load-policy.sh
 ```
 
-Cette commande lit le fichier `admin_data` et affiche la clé API du compte `admin`.
+Cette commande permet de charger la policy `policies/lab.yml` dans Conjur.
 
-Cette clé sert à comprendre comment Conjur initialise un compte administrateur et stocke son API key localement dans le dépôt de travail.
+La policy crée :
+- deux variables de secret ;
+- un layer nommé `prod-web` ;
+- deux hosts nommés `web-01` et `web-02` ;
+- les permissions de lecture sur les secrets pour le layer.
 
-## Étape 6 – Lire les secrets stockés
+## Enregistrer les secrets
 
-Commande :
+Commande à taper :
+
+```bash
+./scripts/store-secret.sh
+```
+
+Cette commande permet d'enregistrer deux secrets dans Conjur :
+- `webservers/db/username`
+- `webservers/db/password`
+
+## Lire les secrets
+
+Commande à taper :
 
 ```bash
 ./scripts/read-secrets.sh
 ```
 
-Cette commande :
-- reconnecte automatiquement le client Conjur avec la clé API de l'administrateur ;
-- lit les secrets définis dans les deux policies.
+Cette commande permet de vérifier que les secrets ont bien été stockés.
 
-Les secrets relus sont :
-- `webservers/db/username`
-- `webservers/db/password`
-- `network/snmp/community`
-- `network/backup/password`
+## Lire la policy
 
-## Étape 7 – Examiner les policies
-
-Commande :
+Commande à taper :
 
 ```bash
-cat policies/policy-webservers.yml
+cat policies/lab.yml
 ```
 
-Cette commande affiche la policy des serveurs web.
-
-Commande :
-
-```bash
-cat policies/policy-network.yml
-```
-
-Cette commande affiche la policy réseau.
-
-Ces deux fichiers permettent d'identifier :
+Cette commande permet de relire la structure de la policy et d'identifier :
 - les variables ;
+- le layer ;
 - les hosts ;
-- les layers ;
-- les permissions accordées.
+- le grant ;
+- le permit.
 
-## Étape 8 – Vérifier les ports Codespaces
+## Arrêter le laboratoire
 
-Ouvrir l'onglet `Ports` dans GitHub Codespaces.
-
-Les ports utiles sont :
-- `8443` pour l'accès HTTPS à Conjur via Nginx ;
-- `8081` pour pgAdmin.
-
-Dans un navigateur, il faut toujours utiliser l'URL générée par Codespaces dans cet onglet.
-
-## Étape 9 – Arrêter l'environnement à la fin du travail
-
-Commande :
+Commande à taper :
 
 ```bash
 ./scripts/stop-lab.sh
 ```
 
-Cette commande arrête l'ensemble de la plate-forme.
+Cette commande permet d'arrêter tous les conteneurs du laboratoire.
+
+## Résultat attendu
+
+À la fin du travail :
+- les conteneurs Conjur sont démarrés ;
+- la policy est chargée ;
+- les secrets sont enregistrés ;
+- les secrets peuvent être lus ;
+- la structure de contrôle d'accès est identifiable dans le fichier YAML.
+
+## Ce qu'il faut retenir
+
+Conjur permet de gérer des secrets d'infrastructure à l'aide :
+- d'identités non humaines ;
+- de policies YAML ;
+- de permissions précises sur les ressources.
+
+Le principe du moindre privilège est visible dans ce laboratoire : seuls les rôles autorisés reçoivent un droit de lecture sur les secrets.
 
 ## Commandes récapitulatives
 
@@ -183,26 +166,9 @@ ls
 chmod +x scripts/*.sh
 ./scripts/start-lab.sh
 ./scripts/check-services.sh
-./scripts/show-admin-key.sh
+./scripts/load-policy.sh
+./scripts/store-secret.sh
 ./scripts/read-secrets.sh
-cat policies/policy-webservers.yml
-cat policies/policy-network.yml
+cat policies/lab.yml
 ./scripts/stop-lab.sh
 ```
-
-## Résultat attendu
-
-À la fin du travail :
-- le dépôt a été lancé dans GitHub Codespaces ;
-- Conjur fonctionne avec son proxy Nginx et sa base PostgreSQL ;
-- les policies ont été chargées ;
-- les secrets ont été enregistrés ;
-- les secrets peuvent être relus ;
-- la différence entre `host`, `layer`, `variable` et `permit` est comprise.
-
-## Points à retenir
-
-- Un secret d'infrastructure ne doit pas être stocké en clair dans un fichier partagé.
-- Une policy Conjur définit qui peut lire quoi.
-- Les identités machine sont séparées par rôle.
-- Le principe du moindre privilège consiste à limiter l'accès aux seuls secrets nécessaires.
