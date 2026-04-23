@@ -1,0 +1,24 @@
+---
+- !policy
+  id: webservers
+  body:
+    - !variable db/password
+    - !variable db/username
+
+    - !layer prod-web
+
+    - !host web-01
+    - !host web-02
+
+    - !grant
+      role: !layer prod-web
+      members:
+        - !host web-01
+        - !host web-02
+
+    - !permit
+      role: !layer prod-web
+      privileges: [read, execute]
+      resources:
+        - !variable db/password
+        - !variable db/username

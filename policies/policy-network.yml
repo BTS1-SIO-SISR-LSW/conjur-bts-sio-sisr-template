@@ -1,0 +1,24 @@
+---
+- !policy
+  id: network
+  body:
+    - !variable snmp/community
+    - !variable backup/password
+
+    - !layer network-admins
+
+    - !host switch-core
+    - !host router-edge
+
+    - !grant
+      role: !layer network-admins
+      members:
+        - !host switch-core
+        - !host router-edge
+
+    - !permit
+      role: !layer network-admins
+      privileges: [read, execute]
+      resources:
+        - !variable snmp/community
+        - !variable backup/password
